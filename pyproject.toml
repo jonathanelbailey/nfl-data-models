@@ -1,0 +1,25 @@
+#[project]
+#name = "nfl_data_models"
+#version = "0.1.0"
+#authors = [
+#  { name="Jonathan Bailey", email="jonathan@jelbailey.com" },
+#]
+#description = "A Python package for predicting NFL game outcomes using advanced data models."
+#readme = "README.md"
+#requires-python = ">=3.6"
+#classifiers = [
+#    "Programming Language :: Python :: 3",
+#    "License :: OSI Approved :: MIT License",
+#    "Operating System :: OS Independent",
+#]
+#
+#[project.urls]
+#Homepage = "https://github.com/jonathanelbailey/nfl-data-models"
+#Issues = "https://github.com/jonathanelbailey/nfl-data-models/issues"
+
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"

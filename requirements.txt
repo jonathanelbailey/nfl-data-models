@@ -1,0 +1,14 @@
+nfl-data-py
+xgboost
+scikit-learn
+pandas
+numpy
+pyreadr
+clearml
+dash
+jupyter-dash
+dash-bootstrap-components
+bayesian-optimization
+statsmodels
+seaborn
+hyperopt
