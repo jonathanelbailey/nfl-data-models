@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+
+
 def create_wp_calibration_data(df):
     data = df.copy()
     # Fix bug in pit-ari game and create Winner column
@@ -66,11 +68,13 @@ def make_model_mutations(pbp):
 
 def prepare_wp_data(df):
     # Group by game_id and create receive_2h_ko
-    pbp = df.groupby('game_id', group_keys=True).apply(
-        lambda x: x.assign(
-            receive_2h_ko=np.where((x['qtr'] <= 2) & (x['posteam'] == x['defteam'].dropna().iloc[0]), 1, 0)
+    grouped = df.groupby('game_id', group_keys=False)
+    pbp = grouped.apply(
+        lambda row: row.assign(
+            receive_2h_ko=np.where((row['qtr'] <= 2) & (row['posteam'] == row['defteam'].dropna().iloc[0]), 1, 0)
         )
     )
+
     # Ungroup and create additional columns
     pbp['posteam_spread'] = np.where(pbp['home'] == 1, pbp['spread_line'], -1 * pbp['spread_line'])
     pbp['elapsed_share'] = (3600 - pbp['game_seconds_remaining']) / 3600
@@ -80,12 +84,14 @@ def prepare_wp_data(df):
     return pbp
 
 
+def add_label_column(df):
+    df['label'] = np.where(df['posteam'] == df['Winner'], 1, 0)
+    return df
+
+
 def drop_rows(df):
-    print("Dropping Rows")
-    new_df = df.dropna(subset=['down', 'game_seconds_remaining', 'score_differential', 'yardline_100', 'result', 'posteam'])
-    new_df = new_df.loc[new_df['qtr'] <= 4]
-    new_df = new_df.loc[new_df['result'] != 0]
-    return new_df
+    df.dropna(subset=['ep', 'score_differential', 'play_type', 'label', 'defteam_timeouts_remaining', 'posteam_timeouts_remaining', 'yardline_100'], inplace=True)
+    return df.loc[df['qtr'] <= 4]
 
 
 def add_home_column(df):
@@ -94,10 +100,10 @@ def add_home_column(df):
     return df
 
 
-def add_label_column(df):
-    print("Adding Label Column")
-    df['label'] = df.apply(lambda row: 1 if (row['result'] > 0 and row['posteam'] == row['home_team']) or (row['result'] < 0 and row['posteam'] == row['away_team']) else 0, axis=1)
-    return df
+# def add_label_column(df):
+#     print("Adding Label Column")
+#     df['label'] = df.apply(lambda row: 1 if (row['result'] > 0 and row['posteam'] == row['home_team']) or (row['result'] < 0 and row['posteam'] == row['away_team']) else 0, axis=1)
+#     return df
 
 
 def add_receive_2h_ko_column(df):
@@ -128,14 +134,14 @@ def add_spread_time_diff_time_ration_columns(df):
     return new_df
 
 
-def select_relevant_columns(df):
+def select_relevant_columns(df, col):
     print("Selecting Relevant Columns")
-    return df.filter(items=WP_SELECTED_COLUMNS)
+    return df.filter(items=col)
 
 
-def drop_irrelevant_columns(df):
+def drop_irrelevant_columns(df, col):
     print("Dropping Irrelevant Columns")
-    return df.drop(columns=WP_DROP_COLUMNS)
+    return df.drop(columns=col)
 
 
 def add_features(df):
