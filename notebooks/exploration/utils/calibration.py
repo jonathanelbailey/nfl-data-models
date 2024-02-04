@@ -64,12 +64,13 @@ def make_model_mutations(pbp):
     return pbp
 
 
-def prepare_wp_data(pbp):
+def prepare_wp_data(df):
     # Group by game_id and create receive_2h_ko
-    pbp['receive_2h_ko'] = pbp.groupby('game_id').apply(
-        lambda x: np.where((x['qtr'] <= 2) & (x['posteam'] == x['defteam'].first_valid_index()), 1, 0)
-    ).reset_index(level=0, drop=True)
-
+    pbp = df.groupby('game_id', group_keys=True).apply(
+        lambda x: x.assign(
+            receive_2h_ko=np.where((x['qtr'] <= 2) & (x['posteam'] == x['defteam'].dropna().iloc[0]), 1, 0)
+        )
+    )
     # Ungroup and create additional columns
     pbp['posteam_spread'] = np.where(pbp['home'] == 1, pbp['spread_line'], -1 * pbp['spread_line'])
     pbp['elapsed_share'] = (3600 - pbp['game_seconds_remaining']) / 3600
@@ -77,3 +78,71 @@ def prepare_wp_data(pbp):
     pbp['Diff_Time_Ratio'] = pbp['score_differential'] / (np.exp(-4 * pbp['elapsed_share']))
 
     return pbp
+
+
+def drop_rows(df):
+    print("Dropping Rows")
+    new_df = df.dropna(subset=['down', 'game_seconds_remaining', 'score_differential', 'yardline_100', 'result', 'posteam'])
+    new_df = new_df.loc[new_df['qtr'] <= 4]
+    new_df = new_df.loc[new_df['result'] != 0]
+    return new_df
+
+
+def add_home_column(df):
+    print("Adding Home Column")
+    df['home'] = df.apply(lambda row: 1 if row['posteam'] == row['home_team'] else 0, axis=1)
+    return df
+
+
+def add_label_column(df):
+    print("Adding Label Column")
+    df['label'] = df.apply(lambda row: 1 if (row['result'] > 0 and row['posteam'] == row['home_team']) or (row['result'] < 0 and row['posteam'] == row['away_team']) else 0, axis=1)
+    return df
+
+
+def add_receive_2h_ko_column(df):
+    print("Adding Receive 2H KO Column")
+    new_df = df.groupby('game_id', group_keys=False).apply(
+        lambda x: x.assign(
+            receive_2h_ko=np.where((x['qtr'] <= 2) & (x['posteam'] == x['defteam'].dropna().iloc[0]), 1, 0)
+        )
+    )
+    return new_df
+
+
+def add_posteam_spread_elasped_share_columns(df):
+    print("Adding Posessing Team Spread and Elapsed Share Columns")
+    new_df = df.assign(
+        posteam_spread=np.where(df['home'] == 1, df['spread_line'], -1 * df['spread_line']),
+        elapsed_share=(3600 - df['game_seconds_remaining']) / 3600,
+    )
+    return new_df
+
+
+def add_spread_time_diff_time_ration_columns(df):
+    print("Adding Spread Time and Diff Time Ratio Columns")
+    new_df = df.assign(
+        spread_time=df['posteam_spread'] * np.exp(-4 * df['elapsed_share']),
+        diff_time_ratio=df['score_differential'] / (np.exp(-4 * df['elapsed_share']))
+    )
+    return new_df
+
+
+def select_relevant_columns(df):
+    print("Selecting Relevant Columns")
+    return df.filter(items=WP_SELECTED_COLUMNS)
+
+
+def drop_irrelevant_columns(df):
+    print("Dropping Irrelevant Columns")
+    return df.drop(columns=WP_DROP_COLUMNS)
+
+
+def add_features(df):
+    new_df = add_home_column(df)
+    new_df = add_label_column(new_df)
+    new_df = add_receive_2h_ko_column(new_df)
+    new_df = add_posteam_spread_elasped_share_columns(new_df)
+    new_df = add_spread_time_diff_time_ration_columns(new_df)
+
+    return new_df
