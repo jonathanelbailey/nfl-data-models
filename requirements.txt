@@ -12,3 +12,4 @@ bayesian-optimization
 statsmodels
 seaborn
 hyperopt
+pytest
