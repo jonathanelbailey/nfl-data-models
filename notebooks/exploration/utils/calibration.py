@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+from sklearn.calibration import calibration_curve, CalibrationDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import xgboost as xgb
 
 
 def create_wp_calibration_data(df):
@@ -94,61 +97,19 @@ def drop_rows(df):
     return df.loc[df['qtr'] <= 4]
 
 
-def add_home_column(df):
-    print("Adding Home Column")
-    df['home'] = df.apply(lambda row: 1 if row['posteam'] == row['home_team'] else 0, axis=1)
-    return df
+def plot_feature_importance(clf):
+    return xgb.plot_importance(clf)
 
 
-# def add_label_column(df):
-#     print("Adding Label Column")
-#     df['label'] = df.apply(lambda row: 1 if (row['result'] > 0 and row['posteam'] == row['home_team']) or (row['result'] < 0 and row['posteam'] == row['away_team']) else 0, axis=1)
-#     return df
+def plot_calibration_curve(clf, X_test, y_test):
+    prob_y = clf.predict_proba(X_test.to_numpy(), validate_features=True)[:, 1]
+    prob_true, prob_pred = calibration_curve(y_test, prob_y, n_bins=50)
+
+    return CalibrationDisplay(prob_pred, prob_true, prob_pred).plot()
 
 
-def add_receive_2h_ko_column(df):
-    print("Adding Receive 2H KO Column")
-    new_df = df.groupby('game_id', group_keys=False).apply(
-        lambda x: x.assign(
-            receive_2h_ko=np.where((x['qtr'] <= 2) & (x['posteam'] == x['defteam'].dropna().iloc[0]), 1, 0)
-        )
-    )
-    return new_df
+def plot_confusion_matrix(clf, X_test, y_test):
+    preds = clf.predict(X_test.to_numpy(), validate_features=True)
+    cm = confusion_matrix(y_test, preds, labels=clf.classes_)
 
-
-def add_posteam_spread_elasped_share_columns(df):
-    print("Adding Posessing Team Spread and Elapsed Share Columns")
-    new_df = df.assign(
-        posteam_spread=np.where(df['home'] == 1, df['spread_line'], -1 * df['spread_line']),
-        elapsed_share=(3600 - df['game_seconds_remaining']) / 3600,
-    )
-    return new_df
-
-
-def add_spread_time_diff_time_ration_columns(df):
-    print("Adding Spread Time and Diff Time Ratio Columns")
-    new_df = df.assign(
-        spread_time=df['posteam_spread'] * np.exp(-4 * df['elapsed_share']),
-        diff_time_ratio=df['score_differential'] / (np.exp(-4 * df['elapsed_share']))
-    )
-    return new_df
-
-
-def select_relevant_columns(df, col):
-    print("Selecting Relevant Columns")
-    return df.filter(items=col)
-
-
-def drop_irrelevant_columns(df, col):
-    print("Dropping Irrelevant Columns")
-    return df.drop(columns=col)
-
-
-def add_features(df):
-    new_df = add_home_column(df)
-    new_df = add_label_column(new_df)
-    new_df = add_receive_2h_ko_column(new_df)
-    new_df = add_posteam_spread_elasped_share_columns(new_df)
-    new_df = add_spread_time_diff_time_ration_columns(new_df)
-
-    return new_df
+    return ConfusionMatrixDisplay(cm, display_labels=clf.classes_).plot()

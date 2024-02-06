@@ -12,4 +12,6 @@ bayesian-optimization
 statsmodels
 seaborn
 hyperopt
+git+https://github.com/hyperopt/hyperopt-sklearn
 pytest
+lightgbm
