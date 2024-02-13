@@ -2,7 +2,7 @@ nfl-data-py
 xgboost
 scikit-learn
 pandas
-numpy
+numpy==1.24.0
 pyreadr
 clearml
 dash
@@ -15,3 +15,9 @@ hyperopt
 git+https://github.com/hyperopt/hyperopt-sklearn
 pytest
 lightgbm
+--extra-index-url=https://pypi.nvidia.com
+cudf-cu12
+cuml-cu12
+cupy-cuda12x
+pynvml
+optuna

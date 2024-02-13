@@ -19,14 +19,6 @@ def create_wp_calibration_data(df):
         (data['qtr'] <= 4)
         ]
 
-    # Select specific columns
-    pbp_data = pbp_data[[
-        'game_id', 'play_type', 'game_seconds_remaining', 'half_seconds_remaining', 'yardline_100', 'roof',
-        'posteam', 'defteam', 'home_team', 'ydstogo', 'season', 'qtr', 'down', 'week', 'drive', 'ep',
-        'score_differential', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'desc', 'Winner',
-        'spread_line', 'total_line'
-    ]]
-
     return pbp_data
 
 
@@ -102,14 +94,14 @@ def plot_feature_importance(clf):
 
 
 def plot_calibration_curve(clf, X_test, y_test):
-    prob_y = clf.predict_proba(X_test.to_numpy(), validate_features=True)[:, 1]
+    prob_y = clf.predict_proba(X_test, validate_features=True)[:, 1]
     prob_true, prob_pred = calibration_curve(y_test, prob_y, n_bins=50)
 
     return CalibrationDisplay(prob_pred, prob_true, prob_pred).plot()
 
 
 def plot_confusion_matrix(clf, X_test, y_test):
-    preds = clf.predict(X_test.to_numpy(), validate_features=True)
+    preds = clf.predict(X_test, validate_features=True)
     cm = confusion_matrix(y_test, preds, labels=clf.classes_)
 
-    return ConfusionMatrixDisplay(cm, display_labels=clf.classes_).plot()
+    return ConfusionMatrixDisplay(cm, display_labels=clf.classes_, )
